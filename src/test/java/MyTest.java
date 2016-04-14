@@ -1,93 +1,118 @@
 import com.jayway.restassured.RestAssured;
+import com.jayway.restassured.http.ContentType;
+import com.jayway.restassured.response.Response;
+import org.json.simple.JSONObject;
+import org.testng.Assert;
+import org.testng.annotations.AfterGroups;
+import org.testng.annotations.BeforeGroups;
 import org.testng.annotations.Test;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.ArrayList;
 
 import static com.jayway.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
 
 public class MyTest {
 
-    private String apiKey = "7eac01dd-eff0-4c69-b0fc-0c043fabbd32";
+    public static final String API_KEY = "7eac01dd-eff0-4c69-b0fc-0c043fabbd32";
+    public static final String NAME = "test2api";
+    public static final String RENAME = "a123456test";
+    private Response response;
+    private Response responseAppList;
+    JSONObject api = new JSONObject();
 
-    @Test
-    public void test() {
+    private Response getAllApplications() {
 
-
-        RestAssured.baseURI = "https://api.heroku.com";
-
-        given().
+        return given().
                 header("Accept", "application/vnd.heroku+json; version=3").
-                header("Authorization", "Bearer " + apiKey).
+                header("Authorization", "Bearer " + API_KEY).
                 when().
-                get("/apps/test555656767").
-        then().
-                statusCode(200).
-                and().
-                assertThat().body("name", equalTo("test555656767") );
-
-
+                get("/apps");
     }
 
-    @Test
+    @BeforeGroups({"create", "update", "delete"})
+    public void setUp() throws Exception {
+        RestAssured.baseURI = "https://api.heroku.com";
+        api.put("name", NAME);
+        response = given().
+                header("Accept", "application/vnd.heroku+json; version=3").
+                header("Content-Type", "application/json").
+                header("Authorization", "Bearer " + API_KEY).
+                body(api.toJSONString()).
+                when().
+                post("/apps");
+    }
+
+    @AfterGroups("create")
+    public void tearDown() throws Exception {
+        response = given().
+                header("Accept", "application/vnd.heroku+json; version=3").
+                header("Content-Type", "application/json").
+                header("Authorization", "Bearer " + API_KEY).
+                body(api.toJSONString()).
+                when().
+                delete("/apps/" + NAME);
+    }
+
+    @AfterGroups("update")
+    public void tearDownUpdate() throws Exception {
+        response = given().
+                header("Accept", "application/vnd.heroku+json; version=3").
+                header("Content-Type", "application/json").
+                header("Authorization", "Bearer " + API_KEY).
+                body(api.toJSONString()).
+                when().
+                delete("/apps/" + RENAME);
+    }
+
+
+    @Test(groups = "create")
     public void createApp() {
-
-        RestAssured.baseURI = "https://api.heroku.com";
-
-
-        given().
-                header("Accept", "application/vnd.heroku+json; version=3").
-                header("Content-Type", "application/json").
-                header("Authorization", "Bearer " + apiKey).
-                body("{\"name\" : \"test555656767\" }").
-                when().
-                post("/apps").
+        response.
                 then().
-                statusCode(201).
-        and().
-                assertThat().body("name", equalTo("test555656767"));
-
+                statusCode(201);
+        responseAppList = getAllApplications();
+        ArrayList<String> appList = responseAppList.path("name");
+        Assert.assertTrue(appList.contains(NAME));
     }
 
-    @Test
-
+    @Test(groups = "update")
     public void updateApp() {
-
-        RestAssured.baseURI = "https://api.heroku.com";
-
-        given().
+        api.put("name", RENAME);
+        response = given().
                 header("Accept", "application/vnd.heroku+json; version=3").
                 header("Content-Type", "application/json").
-                header("Authorization", "Bearer " + apiKey).
-                body("{\"name\" : \"test555656767\" }").
+                header("Authorization", "Bearer " + API_KEY).
+                body(api.toJSONString()).
                 when().
-                patch("/apps/test555656767").
+                patch("/apps/" + NAME).
                 then().
                 statusCode(200).
-                and().
-                assertThat().body("updated_at", greaterThanOrEqualTo(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date())));
+                contentType(ContentType.JSON).
+                extract().
+                response();
+        System.out.println(response.asString());
+
+        responseAppList = getAllApplications();
+        ArrayList<String> appList = responseAppList.path("name");
+        Assert.assertTrue(appList.contains(RENAME));
+
     }
 
-    @Test (dependsOnMethods = { "updateApp" })
+    @Test(groups = "delete")
 
     public void deleteApp() {
-
-        RestAssured.baseURI = "https://api.heroku.com";
-
         given().
                 header("Accept", "application/vnd.heroku+json; version=3").
                 header("Content-Type", "application/json").
-                header("Authorization", "Bearer " + apiKey).
-                body("{\"name\" : \"test555656767\" }").
+                header("Authorization", "Bearer " + API_KEY).
+                body(api.toJSONString()).
                 when().
-                delete("/apps/test555656767").
+                delete("/apps/" + NAME).
                 then().
-                statusCode(200).
-        and().
-                assertThat().body("name", equalTo("test555656767"));;
-
+                statusCode(200);
+        responseAppList = getAllApplications();
+        ArrayList<String> appList = responseAppList.path("name");
+        Assert.assertFalse(appList.contains(NAME));
     }
 }

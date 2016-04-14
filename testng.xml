@@ -1,8 +1,34 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="Example test run">
-    <test name="Simple Test">
+    <test name="create">
+        <groups>
+            <run>
+                <include name="create" />
+            </run>
+        </groups>
         <classes>
             <class name="MyTest"/>
         </classes>
     </test>
+    <test name="update">
+        <groups>
+            <run>
+                <include name="update" />
+            </run>
+        </groups>
+        <classes>
+            <class name="MyTest"/>
+        </classes>
+    </test>
+    <test name="delete">
+        <groups>
+            <run>
+                <include name="delete" />
+            </run>
+        </groups>
+        <classes>
+            <class name="MyTest"/>
+        </classes>
+    </test>
+
 </suite>
