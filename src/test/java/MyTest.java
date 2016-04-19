@@ -143,7 +143,7 @@ public class MyTest {
         Assert.assertFalse(appList.contains(NAME));
     }
 
-    @Test
+    @Test(groups = "negative")
     public void readNonExistingApp() {
         app.put("name", NAME);
         given().
@@ -155,7 +155,7 @@ public class MyTest {
                 statusCode(404);
     }
 
-    @Test
+    @Test(groups = "negative")
     public void updateNonExistingApp() {
         app.put("name", RENAME);
         given().
@@ -168,7 +168,7 @@ public class MyTest {
                 statusCode(404);
     }
 
-    @Test
+    @Test(groups = "negative")
     public void deleteNonExistingApp() {
         app.put("name", NAME);
         given().
@@ -194,7 +194,7 @@ public class MyTest {
                 statusCode(422);
     }
 
-    @Test
+    @Test(groups = "negative")
     public void createWithShortName(){
         app.put("name", SHORT_NAME);
         given().
@@ -211,7 +211,7 @@ public class MyTest {
         Assert.assertFalse(appList.contains(SHORT_NAME));
     }
 
-    @Test
+    @Test(groups = "negative")
     public void createWithLongName(){
         app.put("name", LONG_NAME);
         given().
@@ -228,7 +228,7 @@ public class MyTest {
         Assert.assertFalse(appList.contains(LONG_NAME));
     }
 
-    @Test
+    @Test(groups = "negative")
     public void createWithUpperCaseName(){
         app.put("name", UPPER_CASE);
         given().
@@ -245,7 +245,7 @@ public class MyTest {
         Assert.assertFalse(appList.contains(UPPER_CASE));
     }
 
-    @Test
+    @Test(groups = "negative")
     public void createNameStartsWithDigit(){
         app.put("name", NAME_STARTS_DIGIT);
         given().
