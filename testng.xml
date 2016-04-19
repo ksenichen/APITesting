@@ -10,6 +10,16 @@
             <class name="MyTest"/>
         </classes>
     </test>
+    <test name="read">
+        <groups>
+            <run>
+                <include name="read" />
+            </run>
+        </groups>
+        <classes>
+            <class name="MyTest"/>
+        </classes>
+    </test>
     <test name="update">
         <groups>
             <run>
@@ -24,6 +34,16 @@
         <groups>
             <run>
                 <include name="delete" />
+            </run>
+        </groups>
+        <classes>
+            <class name="MyTest"/>
+        </classes>
+    </test>
+    <test name="negative">
+        <groups>
+            <run>
+                <include name="negative" />
             </run>
         </groups>
         <classes>

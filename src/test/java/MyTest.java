@@ -3,9 +3,7 @@ import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.response.Response;
 import org.json.simple.JSONObject;
 import org.testng.Assert;
-import org.testng.annotations.AfterGroups;
-import org.testng.annotations.BeforeGroups;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import java.util.ArrayList;
 
@@ -17,9 +15,13 @@ public class MyTest {
     public static final String API_KEY = "7eac01dd-eff0-4c69-b0fc-0c043fabbd32";
     public static final String NAME = "test2api";
     public static final String RENAME = "a123456test";
+    public static final String SHORT_NAME = "a";
+    public static final String LONG_NAME = "q123456789012345678901234567890";
+    public static final String UPPER_CASE = "qwertY";
+    public static final String NAME_STARTS_DIGIT = "1qwerty";
     private Response response;
     private Response responseAppList;
-    JSONObject api = new JSONObject();
+    JSONObject app = new JSONObject();
 
     private Response getAllApplications() {
 
@@ -30,26 +32,44 @@ public class MyTest {
                 get("/apps");
     }
 
-    @BeforeGroups({"create", "update", "delete"})
-    public void setUp() throws Exception {
+    @BeforeClass
+    public void setUpBaseUri() throws Exception {
         RestAssured.baseURI = "https://api.heroku.com";
-        api.put("name", NAME);
+    }
+
+    @BeforeGroups({"create", "read", "delete"})
+    public void setUp() throws Exception {
+
+        app.put("name", NAME);
         response = given().
                 header("Accept", "application/vnd.heroku+json; version=3").
                 header("Content-Type", "application/json").
                 header("Authorization", "Bearer " + API_KEY).
-                body(api.toJSONString()).
+                body(app.toJSONString()).
                 when().
                 post("/apps");
     }
 
-    @AfterGroups("create")
+    @BeforeGroups("update")
+    public void setUpUpdate() throws Exception {
+        app.put("name", NAME);
+        response = given().
+                header("Accept", "application/vnd.heroku+json; version=3").
+                header("Content-Type", "application/json").
+                header("Authorization", "Bearer " + API_KEY).
+                body(app.toJSONString()).
+                when().
+                post("/apps");
+        app.put("name", RENAME);
+    }
+
+    @AfterGroups({"create", "read"})
     public void tearDown() throws Exception {
         response = given().
                 header("Accept", "application/vnd.heroku+json; version=3").
                 header("Content-Type", "application/json").
                 header("Authorization", "Bearer " + API_KEY).
-                body(api.toJSONString()).
+                body(app.toJSONString()).
                 when().
                 delete("/apps/" + NAME);
     }
@@ -60,7 +80,7 @@ public class MyTest {
                 header("Accept", "application/vnd.heroku+json; version=3").
                 header("Content-Type", "application/json").
                 header("Authorization", "Bearer " + API_KEY).
-                body(api.toJSONString()).
+                body(app.toJSONString()).
                 when().
                 delete("/apps/" + RENAME);
     }
@@ -76,14 +96,24 @@ public class MyTest {
         Assert.assertTrue(appList.contains(NAME));
     }
 
+    @Test(groups = "read")
+    public void readApp() {
+        given().
+                header("Accept", "application/vnd.heroku+json; version=3").
+                header("Authorization", "Bearer " + API_KEY).
+                when().
+                get("/apps/" + NAME).
+                then().
+                statusCode(200);
+    }
+
     @Test(groups = "update")
     public void updateApp() {
-        api.put("name", RENAME);
         response = given().
                 header("Accept", "application/vnd.heroku+json; version=3").
                 header("Content-Type", "application/json").
                 header("Authorization", "Bearer " + API_KEY).
-                body(api.toJSONString()).
+                body(app.toJSONString()).
                 when().
                 patch("/apps/" + NAME).
                 then().
@@ -91,8 +121,6 @@ public class MyTest {
                 contentType(ContentType.JSON).
                 extract().
                 response();
-        System.out.println(response.asString());
-
         responseAppList = getAllApplications();
         ArrayList<String> appList = responseAppList.path("name");
         Assert.assertTrue(appList.contains(RENAME));
@@ -100,13 +128,12 @@ public class MyTest {
     }
 
     @Test(groups = "delete")
-
     public void deleteApp() {
         given().
                 header("Accept", "application/vnd.heroku+json; version=3").
                 header("Content-Type", "application/json").
                 header("Authorization", "Bearer " + API_KEY).
-                body(api.toJSONString()).
+                body(app.toJSONString()).
                 when().
                 delete("/apps/" + NAME).
                 then().
@@ -115,4 +142,125 @@ public class MyTest {
         ArrayList<String> appList = responseAppList.path("name");
         Assert.assertFalse(appList.contains(NAME));
     }
+
+    @Test
+    public void readNonExistingApp() {
+        app.put("name", NAME);
+        given().
+                header("Accept", "application/vnd.heroku+json; version=3").
+                header("Authorization", "Bearer " + API_KEY).
+                when().
+                get("/apps" + NAME).
+                then().
+                statusCode(404);
+    }
+
+    @Test
+    public void updateNonExistingApp() {
+        app.put("name", RENAME);
+        given().
+                header("Accept", "application/vnd.heroku+json; version=3").
+                header("Authorization", "Bearer " + API_KEY).
+                body(app.toJSONString()).
+                when().
+                patch("/apps" + NAME).
+                then().
+                statusCode(404);
+    }
+
+    @Test
+    public void deleteNonExistingApp() {
+        app.put("name", NAME);
+        given().
+                header("Accept", "application/vnd.heroku+json; version=3").
+                header("Authorization", "Bearer " + API_KEY).
+                body(app.toJSONString()).
+                when().
+                delete("/apps" + NAME).
+                then().
+                statusCode(404);
+    }
+
+    @Test(groups = "create")
+    public void createWithSameName() {
+        given().
+                header("Accept", "application/vnd.heroku+json; version=3").
+                header("Content-Type", "application/json").
+                header("Authorization", "Bearer " + API_KEY).
+                body(app.toJSONString()).
+                when().
+                post("/apps").
+                then().
+                statusCode(422);
+    }
+
+    @Test
+    public void createWithShortName(){
+        app.put("name", SHORT_NAME);
+        given().
+                header("Accept", "application/vnd.heroku+json; version=3").
+                header("Content-Type", "application/json").
+                header("Authorization", "Bearer " + API_KEY).
+                body(app.toJSONString()).
+                when().
+                post("/apps").
+                then().
+                statusCode(422);
+        responseAppList = getAllApplications();
+        ArrayList<String> appList = responseAppList.path("name");
+        Assert.assertFalse(appList.contains(SHORT_NAME));
+    }
+
+    @Test
+    public void createWithLongName(){
+        app.put("name", LONG_NAME);
+        given().
+                header("Accept", "application/vnd.heroku+json; version=3").
+                header("Content-Type", "application/json").
+                header("Authorization", "Bearer " + API_KEY).
+                body(app.toJSONString()).
+                when().
+                post("/apps").
+                then().
+                statusCode(422);
+        responseAppList = getAllApplications();
+        ArrayList<String> appList = responseAppList.path("name");
+        Assert.assertFalse(appList.contains(LONG_NAME));
+    }
+
+    @Test
+    public void createWithUpperCaseName(){
+        app.put("name", UPPER_CASE);
+        given().
+                header("Accept", "application/vnd.heroku+json; version=3").
+                header("Content-Type", "application/json").
+                header("Authorization", "Bearer " + API_KEY).
+                body(app.toJSONString()).
+                when().
+                post("/apps").
+                then().
+                statusCode(422);
+        responseAppList = getAllApplications();
+        ArrayList<String> appList = responseAppList.path("name");
+        Assert.assertFalse(appList.contains(UPPER_CASE));
+    }
+
+    @Test
+    public void createNameStartsWithDigit(){
+        app.put("name", NAME_STARTS_DIGIT);
+        given().
+                header("Accept", "application/vnd.heroku+json; version=3").
+                header("Content-Type", "application/json").
+                header("Authorization", "Bearer " + API_KEY).
+                body(app.toJSONString()).
+                when().
+                post("/apps").
+                then().
+                statusCode(422);
+        responseAppList = getAllApplications();
+        ArrayList<String> appList = responseAppList.path("name");
+        Assert.assertFalse(appList.contains(NAME_STARTS_DIGIT));
+    }
+
+
 }
